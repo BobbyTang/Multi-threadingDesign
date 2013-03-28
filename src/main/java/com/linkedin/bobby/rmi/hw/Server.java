@@ -14,19 +14,19 @@ public class Server implements Hello {
 
 	public static void main(String[] args) {
 		Server server = new Server();
-		Hello2Impl hello2 = new Hello2Impl();
+//		Hello2Impl hello2 = new Hello2Impl();
 		int regPort = 2001;
 
 		try {
 			Hello stub = (Hello) UnicastRemoteObject.exportObject(server, 10001);
-			Hello2 stub2 = (Hello2) UnicastRemoteObject.exportObject(hello2, 10002);
+//			Hello2 stub2 = (Hello2) UnicastRemoteObject.exportObject(hello2, 10002);
 
 
 			LocateRegistry.createRegistry(regPort);
 			
 			Registry reg = LocateRegistry.getRegistry(regPort);
 			reg.bind(Hello.class.getSimpleName(), stub);
-			reg.bind(Hello2.class.getSimpleName(), stub2);
+//			reg.bind(Hello2.class.getSimpleName(), stub2);
 			
 			System.out.println("Server is ready.");
 			
