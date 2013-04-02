@@ -1,0 +1,4 @@
+grant codebase "file:/Users/BobbyTang/Documents/Java/workspace/Multi-threadingDesign/target/classes/"{
+	permission java.net.SocketPermission "127.0.0.1:2001", "connect,resolve";
+    permission java.security.AllPermission;
+};
