@@ -11,7 +11,7 @@ public class Server {
 
 	public static void main(String[] args) {
 
-		//System.setProperty ("java.security.policy", "file:///Users/BobbyTang/Documents/Java/workspace/Multi-threadingDesign/src/main/resources/rmihwserver.policy");
+		System.setProperty ("java.security.policy", "file:///Users/BobbyTang/Documents/Java/workspace/Multi-threadingDesign/src/main/resources/rmipolicy/rmihwserver.policy");
 		
 		System.out.println("RMI server started");
 
@@ -24,7 +24,7 @@ public class Server {
 
 		Hello hello = new HelloImpl();
 		// Hello2Impl hello2 = new Hello2Impl();
-		int regPort = 2001;
+		int regPort = 1099;
 
 		try {
 			Hello stub = (Hello) UnicastRemoteObject.exportObject(hello, 10001);
