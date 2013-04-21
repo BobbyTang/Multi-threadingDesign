@@ -11,6 +11,8 @@ public class Server {
 
 	public static void main(String[] args) {
 
+		//In this policy, it contains the codeBase information.
+		//Note that notice carefully about the format of codeBase(capitalize B) string.
 		System.setProperty ("java.security.policy", "file:///Users/BobbyTang/Documents/Java/workspace/Multi-threadingDesign/src/main/resources/rmipolicy/rmihwserver.policy");
 		
 		System.out.println("RMI server started");
