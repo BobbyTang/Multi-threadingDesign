@@ -1,4 +1,4 @@
-package com.linkedin.bobby.jms.offical.simple;
+package com.linkedin.bobby.jms.official.simple;
 
 /*
  *
@@ -40,52 +40,53 @@ package com.linkedin.bobby.jms.offical.simple;
  * 
  */
 /**
- * The SimpleQueueSender class consists only of a main method, 
- * which sends several messages to a queue.
+ * The SimpleTopicPublisher class consists only of a main method,
+ * which publishes several messages to a topic.
  * 
- * Run this program in conjunction with SimpleQueueReceiver.
- * Specify a queue name on the command line when you run the
- * program.  By default, the program sends one message.  Specify
- * a number after the queue name to send that number of messages.
+ * Run this program in conjunction with SimpleTopicSubscriber.  
+ * Specify a topic name on the command line when you run the
+ * program.  By default, the program sends one message.  
+ * Specify a number after the topic name to send that number 
+ * of messages.
  */
 import javax.jms.JMSException;
-import javax.jms.Queue;
-import javax.jms.QueueConnection;
-import javax.jms.QueueConnectionFactory;
-import javax.jms.QueueSender;
-import javax.jms.QueueSession;
 import javax.jms.Session;
 import javax.jms.TextMessage;
+import javax.jms.Topic;
+import javax.jms.TopicConnection;
+import javax.jms.TopicConnectionFactory;
+import javax.jms.TopicPublisher;
+import javax.jms.TopicSession;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-public class SimpleQueueSender {
+public class SimpleTopicPublisher {
 
 	/**
 	 * Main method.
 	 * 
 	 * @param args
-	 *            the queue used by the example and, optionally, the number of
+	 *            the topic used by the example and, optionally, the number of
 	 *            messages to send
 	 */
 	public static void main(String[] args) {
-		String queueName = null;
+		String topicName = null;
 		Context jndiContext = null;
-		QueueConnectionFactory queueConnectionFactory = null;
-		QueueConnection queueConnection = null;
-		QueueSession queueSession = null;
-		Queue queue = null;
-		QueueSender queueSender = null;
+		TopicConnectionFactory topicConnectionFactory = null;
+		TopicConnection topicConnection = null;
+		TopicSession topicSession = null;
+		Topic topic = null;
+		TopicPublisher topicPublisher = null;
 		TextMessage message = null;
 		final int NUM_MSGS;
 
 		if ((args.length < 1) || (args.length > 2)) {
-			System.out.println("Usage: java SimpleQueueSender " + "<queue-name> [<number-of-messages>]");
+			System.out.println("Usage: java " + "SimpleTopicPublisher <topic-name> " + "[<number-of-messages>]");
 			System.exit(1);
 		}
-		queueName = new String(args[0]);
-		System.out.println("Queue name is " + queueName);
+		topicName = new String(args[0]);
+		System.out.println("Topic name is " + topicName);
 		if (args.length == 2) {
 			NUM_MSGS = (new Integer(args[1])).intValue();
 		} else {
@@ -99,47 +100,43 @@ public class SimpleQueueSender {
 			jndiContext = new InitialContext();
 		} catch (NamingException e) {
 			System.out.println("Could not create JNDI API " + "context: " + e.toString());
+			e.printStackTrace();
 			System.exit(1);
 		}
 
 		/*
-		 * Look up connection factory and queue. If either does not exist, exit.
+		 * Look up connection factory and topic. If either does not exist, exit.
 		 */
 		try {
-			queueConnectionFactory = (QueueConnectionFactory) jndiContext.lookup("QueueConnectionFactory");
-			queue = (Queue) jndiContext.lookup(queueName);
+			topicConnectionFactory = (TopicConnectionFactory) jndiContext.lookup("TopicConnectionFactory");
+			topic = (Topic) jndiContext.lookup(topicName);
 		} catch (NamingException e) {
 			System.out.println("JNDI API lookup failed: " + e.toString());
+			e.printStackTrace();
 			System.exit(1);
 		}
 
 		/*
 		 * Create connection. Create session from connection; false means
-		 * session is not transacted. Create sender and text message. Send
-		 * messages, varying text slightly. Send end-of-messages message.
-		 * Finally, close connection.
+		 * session is not transacted. Create publisher and text message. Send
+		 * messages, varying text slightly. Finally, close connection.
 		 */
 		try {
-			queueConnection = queueConnectionFactory.createQueueConnection();
-			queueSession = queueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-			queueSender = queueSession.createSender(queue);
-			message = queueSession.createTextMessage();
+			topicConnection = topicConnectionFactory.createTopicConnection();
+			topicSession = topicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+			topicPublisher = topicSession.createPublisher(topic);
+			message = topicSession.createTextMessage();
 			for (int i = 0; i < NUM_MSGS; i++) {
 				message.setText("This is message " + (i + 1));
-				System.out.println("Sending message: " + message.getText());
-				queueSender.send(message);
+				System.out.println("Publishing message: " + message.getText());
+				topicPublisher.publish(message);
 			}
-
-			/*
-			 * Send a non-text control message indicating end of messages.
-			 */
-			queueSender.send(queueSession.createMessage());
 		} catch (JMSException e) {
 			System.out.println("Exception occurred: " + e.toString());
 		} finally {
-			if (queueConnection != null) {
+			if (topicConnection != null) {
 				try {
-					queueConnection.close();
+					topicConnection.close();
 				} catch (JMSException e) {
 				}
 			}

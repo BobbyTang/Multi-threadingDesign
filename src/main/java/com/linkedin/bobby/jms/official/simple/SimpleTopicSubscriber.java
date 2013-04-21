@@ -1,4 +1,4 @@
-package com.linkedin.bobby.jms.offical.simple;
+package com.linkedin.bobby.jms.official.simple;
 
 /*
  *
@@ -40,35 +40,37 @@ package com.linkedin.bobby.jms.offical.simple;
  * 
  */
 /**
- * The SimpleTopicPublisher class consists only of a main method,
- * which publishes several messages to a topic.
- * 
- * Run this program in conjunction with SimpleTopicSubscriber.  
- * Specify a topic name on the command line when you run the
- * program.  By default, the program sends one message.  
- * Specify a number after the topic name to send that number 
- * of messages.
+ * The SimpleTopicSubscriber class consists only of a main
+ * method, which receives one or more messages from a topic using
+ * asynchronous message delivery.  It uses the message listener
+ * TextListener.  Run this program in conjunction with
+ * SimpleTopicPublisher.  
+ *
+ * Specify a topic name on the command line when you run the 
+ * program. To end the program, enter Q or q on the command line.
  */
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 import javax.jms.TopicConnection;
 import javax.jms.TopicConnectionFactory;
-import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
+import javax.jms.TopicSubscriber;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-public class SimpleTopicPublisher {
+public class SimpleTopicSubscriber {
 
 	/**
 	 * Main method.
 	 * 
 	 * @param args
-	 *            the topic used by the example and, optionally, the number of
-	 *            messages to send
+	 *            the topic used by the example
 	 */
 	public static void main(String[] args) {
 		String topicName = null;
@@ -77,21 +79,21 @@ public class SimpleTopicPublisher {
 		TopicConnection topicConnection = null;
 		TopicSession topicSession = null;
 		Topic topic = null;
-		TopicPublisher topicPublisher = null;
+		TopicSubscriber topicSubscriber = null;
+		TextListener topicListener = null;
 		TextMessage message = null;
-		final int NUM_MSGS;
+		InputStreamReader inputStreamReader = null;
+		char answer = '\0';
 
-		if ((args.length < 1) || (args.length > 2)) {
-			System.out.println("Usage: java " + "SimpleTopicPublisher <topic-name> " + "[<number-of-messages>]");
+		/*
+		 * Read topic name from command line and display it.
+		 */
+		if (args.length != 1) {
+			System.out.println("Usage: java " + "SimpleTopicSubscriber <topic-name>");
 			System.exit(1);
 		}
 		topicName = new String(args[0]);
 		System.out.println("Topic name is " + topicName);
-		if (args.length == 2) {
-			NUM_MSGS = (new Integer(args[1])).intValue();
-		} else {
-			NUM_MSGS = 1;
-		}
 
 		/*
 		 * Create a JNDI API InitialContext object if none exists yet.
@@ -118,18 +120,25 @@ public class SimpleTopicPublisher {
 
 		/*
 		 * Create connection. Create session from connection; false means
-		 * session is not transacted. Create publisher and text message. Send
-		 * messages, varying text slightly. Finally, close connection.
+		 * session is not transacted. Create subscriber. Register message
+		 * listener (TextListener). Receive text messages from topic. When all
+		 * messages have been received, enter Q to quit. Close connection.
 		 */
 		try {
 			topicConnection = topicConnectionFactory.createTopicConnection();
 			topicSession = topicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-			topicPublisher = topicSession.createPublisher(topic);
-			message = topicSession.createTextMessage();
-			for (int i = 0; i < NUM_MSGS; i++) {
-				message.setText("This is message " + (i + 1));
-				System.out.println("Publishing message: " + message.getText());
-				topicPublisher.publish(message);
+			topicSubscriber = topicSession.createSubscriber(topic);
+			topicListener = new TextListener();
+			topicSubscriber.setMessageListener(topicListener);
+			topicConnection.start();
+			System.out.println("To end program, enter Q or q, " + "then <return>");
+			inputStreamReader = new InputStreamReader(System.in);
+			while (!((answer == 'q') || (answer == 'Q'))) {
+				try {
+					answer = (char) inputStreamReader.read();
+				} catch (IOException e) {
+					System.out.println("I/O exception: " + e.toString());
+				}
 			}
 		} catch (JMSException e) {
 			System.out.println("Exception occurred: " + e.toString());

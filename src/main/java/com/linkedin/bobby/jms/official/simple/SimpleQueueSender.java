@@ -1,4 +1,4 @@
-package com.linkedin.bobby.jms.offical.simple;
+package com.linkedin.bobby.jms.official.simple;
 
 /*
  *
@@ -40,60 +40,57 @@ package com.linkedin.bobby.jms.offical.simple;
  * 
  */
 /**
- * The SimpleTopicSubscriber class consists only of a main
- * method, which receives one or more messages from a topic using
- * asynchronous message delivery.  It uses the message listener
- * TextListener.  Run this program in conjunction with
- * SimpleTopicPublisher.  
- *
- * Specify a topic name on the command line when you run the 
- * program. To end the program, enter Q or q on the command line.
+ * The SimpleQueueSender class consists only of a main method, 
+ * which sends several messages to a queue.
+ * 
+ * Run this program in conjunction with SimpleQueueReceiver.
+ * Specify a queue name on the command line when you run the
+ * program.  By default, the program sends one message.  Specify
+ * a number after the queue name to send that number of messages.
  */
-import java.io.IOException;
-import java.io.InputStreamReader;
-
 import javax.jms.JMSException;
+import javax.jms.Queue;
+import javax.jms.QueueConnection;
+import javax.jms.QueueConnectionFactory;
+import javax.jms.QueueSender;
+import javax.jms.QueueSession;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import javax.jms.Topic;
-import javax.jms.TopicConnection;
-import javax.jms.TopicConnectionFactory;
-import javax.jms.TopicSession;
-import javax.jms.TopicSubscriber;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-public class SimpleTopicSubscriber {
+public class SimpleQueueSender {
 
 	/**
 	 * Main method.
 	 * 
 	 * @param args
-	 *            the topic used by the example
+	 *            the queue used by the example and, optionally, the number of
+	 *            messages to send
 	 */
 	public static void main(String[] args) {
-		String topicName = null;
+		String queueName = null;
 		Context jndiContext = null;
-		TopicConnectionFactory topicConnectionFactory = null;
-		TopicConnection topicConnection = null;
-		TopicSession topicSession = null;
-		Topic topic = null;
-		TopicSubscriber topicSubscriber = null;
-		TextListener topicListener = null;
+		QueueConnectionFactory queueConnectionFactory = null;
+		QueueConnection queueConnection = null;
+		QueueSession queueSession = null;
+		Queue queue = null;
+		QueueSender queueSender = null;
 		TextMessage message = null;
-		InputStreamReader inputStreamReader = null;
-		char answer = '\0';
+		final int NUM_MSGS;
 
-		/*
-		 * Read topic name from command line and display it.
-		 */
-		if (args.length != 1) {
-			System.out.println("Usage: java " + "SimpleTopicSubscriber <topic-name>");
+		if ((args.length < 1) || (args.length > 2)) {
+			System.out.println("Usage: java SimpleQueueSender " + "<queue-name> [<number-of-messages>]");
 			System.exit(1);
 		}
-		topicName = new String(args[0]);
-		System.out.println("Topic name is " + topicName);
+		queueName = new String(args[0]);
+		System.out.println("Queue name is " + queueName);
+		if (args.length == 2) {
+			NUM_MSGS = (new Integer(args[1])).intValue();
+		} else {
+			NUM_MSGS = 1;
+		}
 
 		/*
 		 * Create a JNDI API InitialContext object if none exists yet.
@@ -102,50 +99,47 @@ public class SimpleTopicSubscriber {
 			jndiContext = new InitialContext();
 		} catch (NamingException e) {
 			System.out.println("Could not create JNDI API " + "context: " + e.toString());
-			e.printStackTrace();
 			System.exit(1);
 		}
 
 		/*
-		 * Look up connection factory and topic. If either does not exist, exit.
+		 * Look up connection factory and queue. If either does not exist, exit.
 		 */
 		try {
-			topicConnectionFactory = (TopicConnectionFactory) jndiContext.lookup("TopicConnectionFactory");
-			topic = (Topic) jndiContext.lookup(topicName);
+			queueConnectionFactory = (QueueConnectionFactory) jndiContext.lookup("QueueConnectionFactory");
+			queue = (Queue) jndiContext.lookup(queueName);
 		} catch (NamingException e) {
 			System.out.println("JNDI API lookup failed: " + e.toString());
-			e.printStackTrace();
 			System.exit(1);
 		}
 
 		/*
 		 * Create connection. Create session from connection; false means
-		 * session is not transacted. Create subscriber. Register message
-		 * listener (TextListener). Receive text messages from topic. When all
-		 * messages have been received, enter Q to quit. Close connection.
+		 * session is not transacted. Create sender and text message. Send
+		 * messages, varying text slightly. Send end-of-messages message.
+		 * Finally, close connection.
 		 */
 		try {
-			topicConnection = topicConnectionFactory.createTopicConnection();
-			topicSession = topicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-			topicSubscriber = topicSession.createSubscriber(topic);
-			topicListener = new TextListener();
-			topicSubscriber.setMessageListener(topicListener);
-			topicConnection.start();
-			System.out.println("To end program, enter Q or q, " + "then <return>");
-			inputStreamReader = new InputStreamReader(System.in);
-			while (!((answer == 'q') || (answer == 'Q'))) {
-				try {
-					answer = (char) inputStreamReader.read();
-				} catch (IOException e) {
-					System.out.println("I/O exception: " + e.toString());
-				}
+			queueConnection = queueConnectionFactory.createQueueConnection();
+			queueSession = queueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+			queueSender = queueSession.createSender(queue);
+			message = queueSession.createTextMessage();
+			for (int i = 0; i < NUM_MSGS; i++) {
+				message.setText("This is message " + (i + 1));
+				System.out.println("Sending message: " + message.getText());
+				queueSender.send(message);
 			}
+
+			/*
+			 * Send a non-text control message indicating end of messages.
+			 */
+			queueSender.send(queueSession.createMessage());
 		} catch (JMSException e) {
 			System.out.println("Exception occurred: " + e.toString());
 		} finally {
-			if (topicConnection != null) {
+			if (queueConnection != null) {
 				try {
-					topicConnection.close();
+					queueConnection.close();
 				} catch (JMSException e) {
 				}
 			}

@@ -1,4 +1,4 @@
-package com.linkedin.bobby.jms.offical.simple;
+package com.linkedin.bobby.jms.official.simple;
 
 /*
  *
